@@ -4,7 +4,7 @@ import csv
 import time
 from typing import List, IO
 
-genai.configure(api_key=os.environ["API_KEY"])
+
 
 
 BATCH_SIZE = 10
@@ -16,21 +16,18 @@ def generate_prompt(spanish_words: List[str]) -> str:
     Generates Spanish sentences and English translations for a batch of words.
     """
     prompt = """In the form of a csv file generate the following for the list of words provided at the end.
-     'spanish_sentence', 'english_translation', 'spanish_word', 'word_definition'
+     'spanish_sentence', 'english_translation', 'spanish_word', 'word_definition_in_sentence'
 
-    What is very important is that I should be able to discern the meaning of the word based on the context. 
-    Another way of saying that the sentences should be illustrative and good for a language learner.
-    The above is very important that the sentence should contain a ton of context that will aid the reader in figuring out the word.
+    The the sentence should contain a ton of context that will aid the reader in helping deduce the content of the word.
     If one sentences starts off with a noun and uses it as the subject use that verb as the object and do not start with it for the other sentence(s). If it is a verb
-    you can very the conjucation and pick a random tense to use like: present, past, subjunctive, etc.
+    you can vary the conjugation and pick a random tense to use like: present, past, subjunctive, etc.
 
-
-     I want you to create 2 sentences if the word is an easier word and strictly has 1 meaning without ambiguity.
-     I want you to create 3 or 4 or 5 if the word is harder or it has a lot of different meanings.
-     If there are multiple meanings that where more than 1 occurs frequently -- please include all relevant high frequency meanings.
+    Create up to 3 example sentences for a word. Use only 1 sentence if the word is simple and unambiguous. Use more if the word is very complex or has many different definitions all which occur with high frequency.
+    Only include sentences that reflect the common uses. but do not ever exceed 4 sentences in total.
 
      Do not output the column headers. I simply want the results of this csv file. Each column should be wrapped in quotes.
-     column_1 should be the spanish sentence. column 2 should be the translation in english. 3 should be the word used. 4 will be the definition in english -- keep this short.
+     column_1 should be the spanish sentence. column 2 should be the translation in english. 3 should be the word used.
+    4 will be the definition in english only for that specific instance -- keep this short.
      Please 
        :\n"""
     for word in spanish_words:
@@ -43,6 +40,7 @@ class AIWrapper():
 
     @staticmethod
     def call_gemini(input_prompt) -> str:
+        genai.configure(api_key=os.environ["GEMINI_API_KEY"])
         model = genai.GenerativeModel("gemini-1.5-pro")
         response = model.generate_content(input_prompt)
         return response.text
@@ -70,7 +68,7 @@ def write_to_csv(writer,response_text: str):
             continue
         if len(row) != OUTPUT_COLUMNS:
             # raise ValueError(f'wrong output number {row}')
-            print(f'ERROR SKIPPING PRINTING {row} bc {OUTPUT_COLUMNS} NOT CORRECTR')
+            print(f'ERROR SKIPPING PRINTING {row} bc {OUTPUT_COLUMNS} NOT CORRECT')
         else:
             writer.writerow(row)
 
@@ -79,15 +77,13 @@ def write_to_csv(writer,response_text: str):
 with open('output.csv', 'w') as csv_out:
     writer = csv.writer(csv_out)
 
-    with open('spanish_diy_attempt_3.csv', 'r') as input_file:
+    with open('input_file.csv', 'r') as input_file:
         reader = csv.DictReader(input_file)
         word_batch = []
 
         batches_processed = 0
         for i, row in enumerate(reader, 1):
-            if batches_processed == 3:
-                break
-            spanish_word = row.get('spanish_word')
+            spanish_word = row.get('foreign_word')
             if not spanish_word:
                 raise Exception('excepted word from csv')
             word_batch.append(spanish_word)
@@ -95,10 +91,10 @@ with open('output.csv', 'w') as csv_out:
                 if not process_batch(word_batch, writer):
                     word_batch = []
                     break
-                time.sleep(2)
-                batches_processed += 1 
-                word_batch = []
-                print(f'processed {batches_processed} results')
+                else:
+                    batches_processed += 1 
+                    word_batch = []
+                    print(f'processed {batches_processed} results')
                 
 
         # process left over
