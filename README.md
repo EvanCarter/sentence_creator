@@ -1,0 +1,1 @@
+Use this with your own gemini token (should be easy to switch to whatever model you want) to create sentences based on vocab words. Sentences are formatted in CSV and easy to load into a SRS program like anki.
