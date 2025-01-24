@@ -3,6 +3,7 @@ Use this with your own gemini token (should be easy to switch to whatever model 
 Create an input file such like `input_words.csv`
 with the format 
 | foreign_word, |
+| ------------- |
 | muchos,       |
 | años,         |
 | despues,      |
